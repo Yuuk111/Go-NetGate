@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/tls"
+	"flag"
 	"log"
 	"net"
 	"net/http"
@@ -15,11 +15,10 @@ import (
 
 // 配置常量
 const (
-	SignCertFile = "/usr/local/tassl/tassl_demo/cert/certs/SS.crt"
-	SignKeyFile  = "/usr/local/tassl/tassl_demo/cert/certs/SS.key"
-	EncCertFile  = "/usr/local/tassl/tassl_demo/cert/certs/SE.crt"
-	EncKeyFile   = "/usr/local/tassl/tassl_demo/cert/certs/SE.key"
-	TargetURL    = "http://target_server:8080"
+	SignCertFile = "./certs/SS.crt"
+	SignKeyFile  = "./certs/SS.key"
+	EncCertFile  = "./certs/SE.crt"
+	EncKeyFile   = "./certs/SE.key"
 	ListenAddr   = ":8443"
 )
 
@@ -29,6 +28,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("国密证书配置加载失败: %v", err)
 	}
+
+	//获取后端地址
+	var TargetURL string
+	flag.StringVar(&TargetURL, "t", "http://localhost:9001", "后端目标服务器地址")
+	flag.Parse()
 
 	// 2. 创建反向代理
 	proxy, err := newReverseProxy(TargetURL)
@@ -158,9 +162,6 @@ func startServer(addr string, gmConfig *gmtls.Config, handler http.Handler) erro
 	// 创建 HTTP 服务器
 	server := &http.Server{
 		Handler: handler,
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
 	}
 
 	return server.Serve(ln)
