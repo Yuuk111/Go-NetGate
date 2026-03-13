@@ -5,7 +5,7 @@ import (
 	"net/url"
 )
 
-func NewGateway(target string) (*httputil.ReverseProxy, error) {
+func NewReverseProxy(target string) (*httputil.ReverseProxy, error) {
 	targetURL, err := url.Parse(target)
 	if err != nil {
 		return nil, err
