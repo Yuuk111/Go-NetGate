@@ -4,6 +4,7 @@ import (
 	"github.com/tjfoc/gmsm/gmtls"
 )
 
+// loadGMTLSConfig 加载国密双证书并返回 TLS 配置
 func LoadGMTLSConfig(signCertPath, signKeyPath, encCertPath, encKeyPath string) (*gmtls.Config, error) {
 	// 加载签名证书
 	sigCert, err := gmtls.LoadX509KeyPair(signCertPath, signKeyPath)

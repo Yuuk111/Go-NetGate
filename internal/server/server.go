@@ -6,7 +6,9 @@ import (
 	"github.com/tjfoc/gmsm/gmtls"
 )
 
+// startServer 创建监听器并运行 HTTP Server
 func StartServer(port string, gmConfig *gmtls.Config, handler http.Handler) error {
+	//创建国密监听器，处理国密握手和加密通信
 	ln, err := gmtls.Listen("tcp", port, gmConfig)
 	if err != nil {
 		return err

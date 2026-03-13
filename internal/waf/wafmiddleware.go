@@ -4,7 +4,9 @@ import (
 	"net/http"
 )
 
+// wafMiddleware WAF 中间件
 func WafMiddleware(next http.Handler) http.Handler {
+	//返回一个新的 http.HandlerFunc，包装了 WAF 检测逻辑
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if checker(r) {
 			w.WriteHeader(http.StatusForbidden)
