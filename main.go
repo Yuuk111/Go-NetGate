@@ -28,10 +28,12 @@ func main() {
 	//获取后端地址
 	cmdConfig := config.LoadConfig()
 	TargetURL := cmdConfig.TargetURL
+	TargetURLs := cmdConfig.BackendServers
 	ListenPort := ":" + cmdConfig.ListenPort
 
 	// 2. 创建反向代理
-	proxy, err := proxy.NewReverseProxy(TargetURL)
+	// proxy, err := proxy.NewReverseProxy(TargetURL)
+	proxy, err := proxy.NewBalancedReverseProxy(TargetURLs)
 	if err != nil {
 		log.Fatalf("反向代理初始化失败: %v", err)
 	}

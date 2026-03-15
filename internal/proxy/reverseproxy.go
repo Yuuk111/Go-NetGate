@@ -5,6 +5,41 @@ import (
 	"net/url"
 )
 
+func NewBalancedReverseProxy(targets []string) (*httputil.ReverseProxy, error) {
+	//预处理，把字符串转换为 url.URL 结构体
+	targetURLs := make([]*url.URL, 0, len(targets)) //申请长度为 len(targets) 的切片，元素类型是 *url.URL
+	//len()怎么处理的？
+	for _, target := range targets {
+		u, err := url.Parse(target)
+		if err != nil {
+			panic("无效的后端地址： " + target)
+		}
+		targetURLs = append(targetURLs, u)
+	}
+	//实例化负载均衡器
+	lb := &RoundRobinLB{
+		backends: targetURLs,
+		current:  0,
+	}
+	//Rewrite 重写发送向后端的请求
+	proxy := &httputil.ReverseProxy{
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			target := lb.Next() //从负载均衡器获取下一个后端服务器
+			// 2. 魔法方法：自动重写请求的目的地
+			// 它会自动把 pr.Out 的 Scheme, Host 替换为 target 的
+			// 并且会安全地拼接 Path 和 RawQuery
+			pr.SetURL(target)
+			// 3. 魔法方法：自动设置 X-Forwarded-For, X-Forwarded-Host, X-Forwarded-Proto 等头部
+			pr.SetXForwarded()
+
+			pr.Out.Header.Set("X-WAF-Protected", "true")
+
+		},
+		//自定义连接池和超时设置(待写)
+	}
+	return proxy, nil
+}
+
 // 配置反向代理
 func NewReverseProxy(target string) (*httputil.ReverseProxy, error) {
 	targetURL, err := url.Parse(target)
