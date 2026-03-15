@@ -1,11 +1,16 @@
 package proxy
 
 import (
+	"log"
+	"net"
 	"net/http/httputil"
 	"net/url"
+
+	"github.com/Yuuk111/Go-NetGate/internal/proxy/loadbalancing"
 )
 
-func NewBalancedReverseProxy(targets []string) (*httputil.ReverseProxy, error) {
+// NewBalancedReverseProxy 创建一个支持负载均衡的反向代理
+func NewBalancedReverseProxy(algo string, targets []string) (*httputil.ReverseProxy, error) {
 	//预处理，把字符串转换为 url.URL 结构体
 	targetURLs := make([]*url.URL, 0, len(targets)) //申请长度为 len(targets) 的切片，元素类型是 *url.URL
 	//len()怎么处理的？
@@ -17,14 +22,17 @@ func NewBalancedReverseProxy(targets []string) (*httputil.ReverseProxy, error) {
 		targetURLs = append(targetURLs, u)
 	}
 	//实例化负载均衡器
-	lb := &RoundRobinLB{
-		backends: targetURLs,
-		current:  0,
-	}
+	lb := loadbalancing.NewLoadBalancer(algo, targetURLs)
 	//Rewrite 重写发送向后端的请求
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
-			target := lb.Next() //从负载均衡器获取下一个后端服务器
+			//获取客户端 IP 地址
+			clientIP, _, err := net.SplitHostPort(pr.In.RemoteAddr)
+			if err != nil { //如果无法解析客户端 IP 地址，记录日志但继续处理请求
+				log.Printf("无法解析客户端 IP 地址: %v", err)
+				return
+			}
+			target := lb.Next(clientIP) //从负载均衡器获取下一个后端服务器
 			// 2. 魔法方法：自动重写请求的目的地
 			// 它会自动把 pr.Out 的 Scheme, Host 替换为 target 的
 			// 并且会安全地拼接 Path 和 RawQuery
@@ -40,7 +48,7 @@ func NewBalancedReverseProxy(targets []string) (*httputil.ReverseProxy, error) {
 	return proxy, nil
 }
 
-// 配置反向代理
+// 创建一个反向代理
 func NewReverseProxy(target string) (*httputil.ReverseProxy, error) {
 	targetURL, err := url.Parse(target)
 	if err != nil {

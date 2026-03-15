@@ -33,7 +33,7 @@ func main() {
 
 	// 2. 创建反向代理
 	// proxy, err := proxy.NewReverseProxy(TargetURL)
-	proxy, err := proxy.NewBalancedReverseProxy(TargetURLs)
+	proxy, err := proxy.NewBalancedReverseProxy(cmdConfig.LoadBalancerAlgo, TargetURLs)
 	if err != nil {
 		log.Fatalf("反向代理初始化失败: %v", err)
 	}
