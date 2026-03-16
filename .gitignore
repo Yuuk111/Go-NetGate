@@ -4,6 +4,8 @@
 # 忽略所有编译生成的二进制文件（假设你的网关最终编译为 Go-NetGate）
 Go-NetGate
 Go-NetGate.exe
+NetGate
+NetGate.exe
 *.exe
 *.test
 *.out

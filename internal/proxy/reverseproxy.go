@@ -23,6 +23,8 @@ func NewBalancedReverseProxy(algo string, targets []string) (*httputil.ReversePr
 	}
 	//实例化负载均衡器
 	lb := loadbalancing.NewLoadBalancer(algo, targetURLs)
+	//创建自定义 Transport
+	customTransport := SetTransport()
 	//Rewrite 重写发送向后端的请求
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
@@ -39,11 +41,13 @@ func NewBalancedReverseProxy(algo string, targets []string) (*httputil.ReversePr
 			pr.SetURL(target)
 			// 3. 魔法方法：自动设置 X-Forwarded-For, X-Forwarded-Host, X-Forwarded-Proto 等头部
 			pr.SetXForwarded()
+			pr.Out.Header.Set("X-Real-IP", clientIP) //设置 X-Real-IP 头部为客户端 IP 地址
 
 			pr.Out.Header.Set("X-WAF-Protected", "true")
 
 		},
-		//自定义连接池和超时设置(待写)
+		//自定义连接池和超时设置 详见 SetTransport() 函数
+		Transport: customTransport,
 	}
 	return proxy, nil
 }
