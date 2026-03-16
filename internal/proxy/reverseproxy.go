@@ -25,6 +25,8 @@ func NewBalancedReverseProxy(algo string, targets []string) (*httputil.ReversePr
 	lb := loadbalancing.NewLoadBalancer(algo, targetURLs)
 	//创建自定义 Transport
 	customTransport := SetTransport()
+	//创建自定义错误处理器
+	customErrorHandler := SetErrorHandler()
 	//Rewrite 重写发送向后端的请求
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
@@ -47,7 +49,8 @@ func NewBalancedReverseProxy(algo string, targets []string) (*httputil.ReversePr
 
 		},
 		//自定义连接池和超时设置 详见 SetTransport() 函数
-		Transport: customTransport,
+		Transport:    customTransport,
+		ErrorHandler: customErrorHandler,
 	}
 	return proxy, nil
 }
