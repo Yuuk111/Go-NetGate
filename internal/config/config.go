@@ -2,6 +2,9 @@ package config
 
 import (
 	"flag"
+	"fmt"
+
+	"github.com/spf13/viper"
 )
 
 type Appconfig struct {
@@ -21,4 +24,51 @@ func LoadConfig() *Appconfig {
 	//后续改为从配置文件加载
 	cfg.BackendServers = []string{"http://localhost:9001", "http://localhost:9002", "http://localhost:9003"}
 	return cfg
+}
+
+// AppFileConfig 定义了从配置文件加载的结构体
+type AppFileConfig struct {
+	Server      ServerConfig      `mapstructure:"server"`
+	LoadBalance LoadBalanceConfig `mapstructure:"load_balance"`
+	Gm          GmConfig          `mapstructure:"gmtls"`
+}
+
+// ServerConfig 定义服务器相关的配置结构体
+type ServerConfig struct {
+	ListenPort string `mapstructure:"port"`
+}
+
+// LoadBalanceConfig 定义负载均衡相关的配置结构体
+type LoadBalanceConfig struct {
+	Algorithm string   `mapstructure:"algorithm"`
+	Backends  []string `mapstructure:"backends"`
+}
+
+// GmConfig 定义国密证书相关的配置结构体
+type GmConfig struct {
+	SignCertFile string `mapstructure:"SignCertFile"`
+	SignKeyFile  string `mapstructure:"SignKeyFile"`
+	EncCertFile  string `mapstructure:"EncCertFile"`
+	EncKeyFile   string `mapstructure:"EncKeyFile"`
+}
+
+func LoadFileConfig() (*AppFileConfig, error) {
+	// 这里可以实现从文件加载配置的逻辑，例如使用 Viper 库
+	viper.SetConfigName("config") // 配置文件名（不带扩展名）
+	viper.SetConfigType("yaml")   // 配置文件类型
+	viper.AddConfigPath(".")      // 配置文件路径
+	// 设置默认值
+	viper.SetDefault("server.port", "8443")
+	viper.SetDefault("load_balance.algorithm", "RR")
+
+	if err := viper.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("读取配置文件失败: %w", err)
+	}
+	// 解析配置到结构体
+	var cfg AppFileConfig
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("解析配置到结构体失败: %w", err)
+	}
+	return &cfg, nil
+
 }

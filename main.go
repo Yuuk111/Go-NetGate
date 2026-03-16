@@ -10,40 +10,36 @@ import (
 	"github.com/Yuuk111/Go-NetGate/internal/waf"
 )
 
-// 配置常量
-const (
-	SignCertFile = "./certs/SS.crt"
-	SignKeyFile  = "./certs/SS.key"
-	EncCertFile  = "./certs/SE.crt"
-	EncKeyFile   = "./certs/SE.key"
-)
-
 func main() {
-	// 1. 初始化国密 TLS 配置
-	gmConfig, err := gmtls.LoadGMTLSConfig(SignCertFile, SignKeyFile, EncCertFile, EncKeyFile)
+	// 1. 加载配置
+	cmdConfig, err := config.LoadFileConfig()
+	if err != nil {
+		log.Fatalf("配置加载失败: %v", err)
+	}
+	// 2. 初始化国密 TLS 配置
+	gmConfig, err := gmtls.LoadGMTLSConfig(cmdConfig.Gm.SignCertFile, cmdConfig.Gm.SignKeyFile, cmdConfig.Gm.EncCertFile, cmdConfig.Gm.EncKeyFile)
 	if err != nil {
 		log.Fatalf("国密证书配置加载失败: %v", err)
 	}
 
-	//获取后端地址
-	cmdConfig := config.LoadConfig()
-	TargetURL := cmdConfig.TargetURL
-	TargetURLs := cmdConfig.BackendServers
-	ListenPort := ":" + cmdConfig.ListenPort
+	// 3. 读取配置项
+	ListenPort := ":" + cmdConfig.Server.ListenPort    // 读取监听端口
+	TargetURLs := cmdConfig.LoadBalance.Backends       // 读取后端服务器列表
+	LoadBalanceAlgo := cmdConfig.LoadBalance.Algorithm // 读取负载均衡算法
 
-	// 2. 创建反向代理
+	// 4. 创建反向代理
 	// proxy, err := proxy.NewReverseProxy(TargetURL)
-	proxy, err := proxy.NewBalancedReverseProxy(cmdConfig.LoadBalancerAlgo, TargetURLs)
+	proxy, err := proxy.NewBalancedReverseProxy(LoadBalanceAlgo, TargetURLs)
 	if err != nil {
 		log.Fatalf("反向代理初始化失败: %v", err)
 	}
 
-	// 3. 组装处理链：WAF -> Proxy
+	// 5. 组装处理链：WAF -> Proxy
 	// 使用 WAF 中间件包装 proxy
 	handler := waf.WafMiddleware(proxy)
 
-	// 4. 启动服务
-	log.Printf("Go语言国密WAF启动，监听 %s，转发至 %s", ListenPort, TargetURL)
+	// 6. 启动服务
+	log.Printf("Go语言国密WAF启动，监听 %s，转发至 %#v", ListenPort, TargetURLs)
 	if err := myserver.StartServer(ListenPort, gmConfig, handler); err != nil {
 		log.Fatalf("服务启动失败: %v", err)
 	}
