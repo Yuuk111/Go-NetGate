@@ -3,7 +3,7 @@
 server:
   # 监听地址和端口
   port: "8443"
-  tls_mode: "gmtls" # 可选值：tls、gmtls
+  tls_mode: "tls" # 可选值：tls、gmtls
 
 # 负载均衡配置
 load_balance:
@@ -16,7 +16,7 @@ load_balance:
   algorithm: "RR"
 
 # 国密证书配置
-gm:
+gmtls:
   SignCertFile: "./certs/SS.crt"
   SignKeyFile: "./certs/SS.key"
   EncCertFile: "./certs/SE.crt"
