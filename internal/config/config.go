@@ -31,11 +31,13 @@ type AppFileConfig struct {
 	Server      ServerConfig      `mapstructure:"server"`
 	LoadBalance LoadBalanceConfig `mapstructure:"load_balance"`
 	Gm          GmConfig          `mapstructure:"gmtls"`
+	Tls         TlsConfig         `mapstructure:"tls"`
 }
 
 // ServerConfig 定义服务器相关的配置结构体
 type ServerConfig struct {
 	ListenPort string `mapstructure:"port"`
+	TLSMode    string `mapstructure:"tls_mode"` // tls模式
 }
 
 // LoadBalanceConfig 定义负载均衡相关的配置结构体
@@ -52,6 +54,12 @@ type GmConfig struct {
 	EncKeyFile   string `mapstructure:"EncKeyFile"`
 }
 
+// TlsConfig 定义标准TLS证书相关的配置结构体
+type TlsConfig struct {
+	CertFile string `mapstructure:"cert_file"`
+	KeyFile  string `mapstructure:"key_file"`
+}
+
 func LoadFileConfig() (*AppFileConfig, error) {
 	// 这里可以实现从文件加载配置的逻辑，例如使用 Viper 库
 	viper.SetConfigName("config") // 配置文件名（不带扩展名）
@@ -60,6 +68,7 @@ func LoadFileConfig() (*AppFileConfig, error) {
 	// 设置默认值
 	viper.SetDefault("server.port", "8443")
 	viper.SetDefault("load_balance.algorithm", "RR")
+	viper.SetDefault("server.tls_mode", "gmtls")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("读取配置文件失败: %w", err)

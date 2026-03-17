@@ -1,28 +1,28 @@
 package gmtls
 
 import (
-	"github.com/tjfoc/gmsm/gmtls"
+	tjgmtls "github.com/tjfoc/gmsm/gmtls"
 )
 
 // loadGMTLSConfig 加载国密双证书并返回 TLS 配置
-func LoadGMTLSConfig(signCertPath, signKeyPath, encCertPath, encKeyPath string) (*gmtls.Config, error) {
+func LoadGMTLSConfig(signCertPath, signKeyPath, encCertPath, encKeyPath string) (*tjgmtls.Config, error) {
 	// 加载签名证书
-	sigCert, err := gmtls.LoadX509KeyPair(signCertPath, signKeyPath)
+	sigCert, err := tjgmtls.LoadX509KeyPair(signCertPath, signKeyPath)
 	if err != nil {
 		return nil, err
 	}
 
 	// 加载加密证书
-	encCert, err := gmtls.LoadX509KeyPair(encCertPath, encKeyPath)
+	encCert, err := tjgmtls.LoadX509KeyPair(encCertPath, encKeyPath)
 	if err != nil {
 		return nil, err
 	}
 
 	// 配置 gmtls
 	// 注意：Certificates 数组中，第一个必须是签名证书，第二个是加密证书
-	config := &gmtls.Config{
-		Certificates: []gmtls.Certificate{sigCert, encCert},
-		GMSupport:    &gmtls.GMSupport{},
+	config := &tjgmtls.Config{
+		Certificates: []tjgmtls.Certificate{sigCert, encCert},
+		GMSupport:    &tjgmtls.GMSupport{},
 	}
 
 	return config, nil
