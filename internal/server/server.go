@@ -27,6 +27,7 @@ func StartServer(ctx context.Context, port string, tlsmode string, gmConfig *gmt
 	}
 
 	errChan := make(chan error, 1) //创建一个错误通道，用于接收服务器运行过程中发生的错误
+	// 启动服务器的协程，根据 TLS 模式选择不同的监听方式
 	go func() {
 		if tlsmode == "gmtls" {
 			// 国密模式
@@ -44,7 +45,7 @@ func StartServer(ctx context.Context, port string, tlsmode string, gmConfig *gmt
 			errChan <- server.ListenAndServeTLS(stdCert, stdKey)
 		}
 	}()
-	select {
+	select { //主协程等待两个信号：服务器运行错误 或者 接收到退出信号
 	case err := <-errChan: //信号A，启动时发生错误，立即返回错误
 		return err
 	case <-ctx.Done(): //信号B，接收到main.go 传入的 Ctrl+C 信号
