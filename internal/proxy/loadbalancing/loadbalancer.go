@@ -43,8 +43,8 @@ func (b *Backend) IsAlive() bool {
 // 心跳检测协程
 // ==================
 func startHealthCheck(ctx context.Context, backends []*Backend) {
-	// 定时器，每 10 秒执行一次健康检查
-	ticker := time.NewTicker(10 * time.Second)
+	// 定时器，每 30 秒执行一次健康检查
+	ticker := time.NewTicker(30 * time.Second)
 	// 不能马上defer 因为外层函数startHealthCheck不会阻塞，心跳检测是在一个独立的协程中运行的，所以需要在协程内停止定时器
 	// 如果直接在外层函数 defer ticker.Stop()，那么这个定时器会在 startHealthCheck 函数返回时就被停止了，导致心跳检测协程无法正常工作
 	go func() {
@@ -137,7 +137,7 @@ func hashIP(ip string) uint32 {
 	return h.Sum32()    //返回计算得到的哈希值
 }
 
-func NewLoadBalancer(algo string, parsedURLs []*url.URL) LoadBalancer {
+func NewLoadBalancer(ctx context.Context, algo string, parsedURLs []*url.URL) LoadBalancer {
 	//包装后端服务器列表，添加存活状态和锁
 	backends := make([]*Backend, 0, len(parsedURLs))
 	for _, u := range parsedURLs {
@@ -148,7 +148,7 @@ func NewLoadBalancer(algo string, parsedURLs []*url.URL) LoadBalancer {
 	}
 	// 启动心跳检测协程，定期检查服务器的存活状态
 	// 如果加入配置文件热更新，传入的 context 可以改为动态生成的，调用 cancel() 来安全销毁旧的心跳检测协程
-	startHealthCheck(context.Background(), backends) //传入一个背景上下文，表示这个协程会一直运行直到程序退出
+	startHealthCheck(ctx, backends) //传入一个背景上下文，表示这个协程会一直运行直到程序退出
 
 	switch algo {
 	case "RR": //基础轮询

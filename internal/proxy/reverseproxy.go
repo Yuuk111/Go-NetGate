@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"log"
 	"net"
 	"net/http/httputil"
@@ -10,7 +11,7 @@ import (
 )
 
 // NewBalancedReverseProxy 创建一个支持负载均衡的反向代理
-func NewBalancedReverseProxy(algo string, targets []string) (*httputil.ReverseProxy, error) {
+func NewBalancedReverseProxy(ctx context.Context, algo string, targets []string) (*httputil.ReverseProxy, error) {
 	//预处理，把字符串转换为 url.URL 结构体
 	targetURLs := make([]*url.URL, 0, len(targets)) //申请长度为 len(targets) 的切片，元素类型是 *url.URL
 	//len()怎么处理的？
@@ -22,7 +23,7 @@ func NewBalancedReverseProxy(algo string, targets []string) (*httputil.ReversePr
 		targetURLs = append(targetURLs, u)
 	}
 	//实例化负载均衡器
-	lb := loadbalancing.NewLoadBalancer(algo, targetURLs)
+	lb := loadbalancing.NewLoadBalancer(ctx, algo, targetURLs)
 	//创建自定义 Transport
 	customTransport := SetTransport()
 	//创建自定义错误处理器

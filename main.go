@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Yuuk111/Go-NetGate/internal/config"
 	"github.com/Yuuk111/Go-NetGate/internal/gmtls"
@@ -13,6 +17,17 @@ import (
 )
 
 func main() {
+	//===========================
+	// 创建监听系统信号的 Context
+	// 当接收到 SIGINT (Ctrl+C) 或 SIGTERM 信号时, ctx 会瞬间自动 cancle()，触发 ctx.Done()，从而通知所有使用这个 ctx 的协程安全退出
+	// 这种方式比传统的 signal.Notify + channel 更加优雅和安全，避免了忘记关闭 channel 导致的资源泄露问题
+	//===========================
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop() //退出时释放资源
+	//===========================
+	//Go 语言铁律：只要你看到 WithTimeout、WithCancel、NotifyContext
+	//下面必须紧跟一行 defer cancel/stop()。谁污染，谁治理。
+	//===========================
 	// 1. 加载配置
 	cmdConfig, err := config.LoadFileConfig()
 	if err != nil {
@@ -36,7 +51,7 @@ func main() {
 
 	// 4. 创建反向代理
 	// proxy, err := proxy.NewReverseProxy(TargetURL)
-	proxy, err := proxy.NewBalancedReverseProxy(LoadBalanceAlgo, TargetURLs)
+	proxy, err := proxy.NewBalancedReverseProxy(ctx, LoadBalanceAlgo, TargetURLs)
 	if err != nil {
 		log.Fatalf("❌ [Server] 反向代理初始化失败: %v", err)
 	}
@@ -48,12 +63,13 @@ func main() {
 	// 6. 启动服务
 	log.Printf("✅ [Server] Go语言国密WAF启动，监听 %s，转发至 %#v", ListenPort, TargetURLs)
 	if err := myserver.StartServer(
+		ctx,
 		ListenPort,
 		TLSMode,
 		gmConfig,
 		cmdConfig.Tls.CertFile,
 		cmdConfig.Tls.KeyFile,
 		handler); err != nil {
-		log.Fatalf("❌ [Server] 服务启动失败: %v", err)
+		log.Fatalf("❌ [Server] 服务遇到错误: %v", err)
 	}
 }
