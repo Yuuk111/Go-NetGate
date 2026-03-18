@@ -52,24 +52,25 @@ func startHealthCheck(ctx context.Context, backends []*Backend) {
 		for {
 			select { // 等待定时器触发或者其他退出信号
 			case <-ticker.C:
+				log.Println("✅ [Health Check] 心跳检测协程正常运行，正在检查后端服务器状态...")
 				for _, b := range backends {
 					// 通过 TCP 连接检查服务器是否存活，超时时间为 2 秒
 					conn, err := net.DialTimeout("tcp", b.URL.Host, 2*time.Second)
 					if err != nil {
 						if b.IsAlive() {
-							log.Printf("🛑[熔断] 后端节点宕机剔除:%s", b.URL.Host)
+							log.Printf("🛑 [Health Check] [熔断] 后端节点宕机剔除:%s", b.URL.Host)
 							b.SetAlive(false) //连接失败，标记服务器不可用
 						}
 					} else {
 						conn.Close() //连接成功就关闭连接，释放资源
 						if !b.IsAlive() {
-							log.Printf("✅[恢复] 后端节点恢复上线:%s", b.URL.Host)
+							log.Printf("✅ [Health Check][恢复] 后端节点恢复上线:%s", b.URL.Host)
 							b.SetAlive(true) //连接成功，标记服务器可用
 						}
 					}
 				}
 			case <-ctx.Done():
-				log.Println("🛑 收到退出信号，心跳检测协程安全销毁")
+				log.Println("🛑 [Health Check] 收到退出信号，心跳检测协程安全销毁")
 				return //退出协程 并且会触发 defer ticker.Stop() 来停止定时器，释放资源
 			}
 		}
@@ -99,7 +100,7 @@ func (lb *RoundRobinLB) Next(clientIP string) *url.URL {
 		}
 	}
 
-	log.Println("❌ [致命错误] 所有后端节点均已宕机！")
+	log.Println("❌ [Load Balancer] [致命错误] 所有后端节点均已宕机！")
 	return nil //所有服务器都不可用，返回 nil
 }
 
@@ -124,7 +125,7 @@ func (lb *IpHashLB) Next(clientIP string) *url.URL {
 		}
 	}
 
-	log.Println("❌ [致命错误] 所有后端节点均已宕机！")
+	log.Println("❌ [Load Balancer] [致命错误] 所有后端节点均已宕机！")
 	return nil //所有服务器都不可用，返回 nil
 }
 
@@ -160,7 +161,7 @@ func NewLoadBalancer(algo string, parsedURLs []*url.URL) LoadBalancer {
 			backends: backends,
 		}
 	default: //默认使用基础轮询
-		log.Printf("未知的负载均衡算法 '%s'，默认使用基础轮询算法", algo)
+		log.Printf("⚠️ [Load Balancer] 未知的负载均衡算法 '%s'，默认使用基础轮询算法", algo)
 		return &RoundRobinLB{
 			backends: backends,
 			current:  0,

@@ -16,7 +16,7 @@ func main() {
 	// 1. 加载配置
 	cmdConfig, err := config.LoadFileConfig()
 	if err != nil {
-		log.Fatalf("配置加载失败: %v", err)
+		log.Fatalf("❌ [Config] 配置加载失败: %v", err)
 	}
 
 	// 2. 读取配置项
@@ -30,7 +30,7 @@ func main() {
 	if TLSMode == "gmtls" {
 		gmConfig, err = gmtls.LoadGMTLSConfig(cmdConfig.Gm.SignCertFile, cmdConfig.Gm.SignKeyFile, cmdConfig.Gm.EncCertFile, cmdConfig.Gm.EncKeyFile)
 		if err != nil {
-			log.Fatalf("国密证书配置加载失败: %v", err)
+			log.Fatalf("❌ [Config] 国密证书配置加载失败: %v", err)
 		}
 	}
 
@@ -38,7 +38,7 @@ func main() {
 	// proxy, err := proxy.NewReverseProxy(TargetURL)
 	proxy, err := proxy.NewBalancedReverseProxy(LoadBalanceAlgo, TargetURLs)
 	if err != nil {
-		log.Fatalf("反向代理初始化失败: %v", err)
+		log.Fatalf("❌ [Server] 反向代理初始化失败: %v", err)
 	}
 
 	// 5. 组装处理链：WAF -> Proxy
@@ -46,7 +46,7 @@ func main() {
 	handler := waf.WafMiddleware(proxy)
 
 	// 6. 启动服务
-	log.Printf("Go语言国密WAF启动，监听 %s，转发至 %#v", ListenPort, TargetURLs)
+	log.Printf("✅ [Server] Go语言国密WAF启动，监听 %s，转发至 %#v", ListenPort, TargetURLs)
 	if err := myserver.StartServer(
 		ListenPort,
 		TLSMode,
@@ -54,6 +54,6 @@ func main() {
 		cmdConfig.Tls.CertFile,
 		cmdConfig.Tls.KeyFile,
 		handler); err != nil {
-		log.Fatalf("服务启动失败: %v", err)
+		log.Fatalf("❌ [Server] 服务启动失败: %v", err)
 	}
 }
