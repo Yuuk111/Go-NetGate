@@ -2,11 +2,11 @@ package limit
 
 import (
 	"log"
-	"net"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/Yuuk111/Go-NetGate/internal/xff"
 	"golang.org/x/time/rate"
 )
 
@@ -78,7 +78,7 @@ func (i *IPRateLimiter) cleanupVisitors() {
 
 func (i *IPRateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip, _, err := net.SplitHostPort(r.RemoteAddr) //获取访客IP地址
+		ip, err := xff.GetClientIP(r) //获取访客IP地址
 		if err != nil {
 			log.Printf("解析 IP 失败: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
