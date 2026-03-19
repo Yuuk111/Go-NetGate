@@ -12,6 +12,7 @@ import (
 	"github.com/Yuuk111/Go-NetGate/internal/proxy"
 	myserver "github.com/Yuuk111/Go-NetGate/internal/server"
 	"github.com/Yuuk111/Go-NetGate/internal/waf"
+	"github.com/Yuuk111/Go-NetGate/internal/waf/limit"
 
 	tjgmtls "github.com/tjfoc/gmsm/gmtls"
 )
@@ -51,14 +52,17 @@ func main() {
 
 	// 4. 创建反向代理
 	// proxy, err := proxy.NewReverseProxy(TargetURL)
-	proxy, err := proxy.NewBalancedReverseProxy(ctx, LoadBalanceAlgo, TargetURLs)
+	proxyhandler, err := proxy.NewBalancedReverseProxy(ctx, LoadBalanceAlgo, TargetURLs)
 	if err != nil {
 		log.Fatalf("❌ [Server] 反向代理初始化失败: %v", err)
 	}
 
 	// 5. 组装处理链：WAF -> Proxy
+	// 创建限流器实例，后续可以加config支持动态调整限流参数
+	rateLimiter := limit.NewIPRateLimiter(5, 10) //每个IP每秒最多5个请求，令牌桶容量为10
+
 	// 使用 WAF 中间件包装 proxy
-	handler := waf.WafMiddleware(proxy)
+	handler := rateLimiter.RateLimitMiddleware(waf.WafMiddleware(proxyhandler))
 
 	// 6. 启动服务
 	log.Printf("✅ [Server] Go语言国密WAF启动，监听 %s，转发至 %#v", ListenPort, TargetURLs)

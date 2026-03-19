@@ -5,6 +5,7 @@ go 1.26.1
 require (
 	github.com/spf13/viper v1.21.0
 	github.com/tjfoc/gmsm v1.4.1
+	golang.org/x/time v0.15.0
 )
 
 require (
