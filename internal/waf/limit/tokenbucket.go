@@ -78,6 +78,7 @@ func (i *IPRateLimiter) cleanupVisitors() {
 
 func (i *IPRateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 后续增加与 RemoteAddr 相关的安全检查，区分是否来自可信代理的请求，避免 IP 欺骗攻击
 		ip, err := xff.GetClientIP(r) //获取访客IP地址
 		if err != nil {
 			log.Printf("解析 IP 失败: %v", err)

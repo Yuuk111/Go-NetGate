@@ -13,6 +13,7 @@ import (
 	myserver "github.com/Yuuk111/Go-NetGate/internal/server"
 	"github.com/Yuuk111/Go-NetGate/internal/waf"
 	"github.com/Yuuk111/Go-NetGate/internal/waf/limit"
+	"github.com/redis/go-redis/v9"
 
 	tjgmtls "github.com/tjfoc/gmsm/gmtls"
 )
@@ -25,16 +26,25 @@ func main() {
 	//===========================
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop() //退出时释放资源
+
 	//===========================
 	//Go 语言铁律：只要你看到 WithTimeout、WithCancel、NotifyContext
 	//下面必须紧跟一行 defer cancel/stop()。谁污染，谁治理。
 	//===========================
+
 	// 1. 加载配置
 	cmdConfig, err := config.LoadFileConfig()
 	if err != nil {
 		log.Fatalf("❌ [Config] 配置加载失败: %v", err)
 	}
 
+	// 初始化 Redis
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "",
+		Password: "",
+		DB:       0,
+		PoolSize: 100,
+	})
 	// 2. 读取配置项
 	ListenPort := ":" + cmdConfig.Server.ListenPort    // 读取监听端口
 	TargetURLs := cmdConfig.LoadBalance.Backends       // 读取后端服务器列表
