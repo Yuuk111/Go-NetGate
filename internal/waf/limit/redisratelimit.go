@@ -95,8 +95,9 @@ func (redisl *RedisRateLimiter) RedisRateLimitMiddleware(next http.Handler) http
 
 		ctxTimeout, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond) //设置 Redis 操作的超时时间，防止长时间等待
 		defer cancel()
-		result, err := redisl.script.Run(ctxTimeout, redisl.redisClient, []string{key}, redisl.rate, redisl.burst, now).Result()
+		result, err := redisl.script.Run(ctxTimeout, redisl.redisClient, []string{key}, redisl.rate, redisl.burst, now).Int()
 		cancel()
+		// 大坑，result默认返回int64
 
 		if err != nil { //降级策略：当 Redis 出现错误时，默认放行请求，避免误伤正常流量
 			// 后续改为降级到本地内存限流，保证在 Redis 故障时仍然能够提供一定的保护能力

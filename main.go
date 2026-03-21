@@ -40,10 +40,10 @@ func main() {
 
 	// 初始化 Redis
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "",
-		Password: "",
-		DB:       0,
-		PoolSize: 100,
+		Addr:     cmdConfig.Redis.Addr,
+		Password: cmdConfig.Redis.Password,
+		DB:       cmdConfig.Redis.DB,
+		PoolSize: cmdConfig.Redis.PoolSize,
 	})
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		log.Fatalf("❌ [Redis] 无法连接到 Redis: %v, 网关启动失败", err)
@@ -75,10 +75,10 @@ func main() {
 
 	// 组装处理链：限流器 -> WAF -> 反向代理
 	// 创建单机限流器实例，后续可以加config支持动态调整限流参数
-	// rateLimiter := limit.NewIPRateLimiter(5, 10) //每个IP每秒最多5个请求，令牌桶容量为10
+	// rateLimiter := limit.NewIPRateLimiter(cmdConfig.SingleRateLimit.Rate, cmdConfig.SingleRateLimit.Burst) //每个IP每秒最多5个请求，令牌桶容量为10
 
 	// 创建分布式 Redis 限流器实例，后续可以加config支持动态调整限流参数
-	redisRateLimiter := limit.NewRedisRateLimiter(rdb, 5, 10) //每个IP每秒最多5个请求，令牌桶容量为10
+	redisRateLimiter := limit.NewRedisRateLimiter(rdb, cmdConfig.RedisRateLimit.Rate, cmdConfig.RedisRateLimit.Burst) //每个IP每秒最多5个请求，令牌桶容量为10
 	// 使用洋葱模型组装中间件链
 	handler := redisRateLimiter.RedisRateLimitMiddleware(waf.WafMiddleware(proxyhandler))
 

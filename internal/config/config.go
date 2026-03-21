@@ -28,10 +28,13 @@ func LoadConfig() *Appconfig {
 
 // AppFileConfig 定义了从配置文件加载的结构体
 type AppFileConfig struct {
-	Server      ServerConfig      `mapstructure:"server"`
-	LoadBalance LoadBalanceConfig `mapstructure:"load_balance"`
-	Gm          GmConfig          `mapstructure:"gmtls"`
-	Tls         TlsConfig         `mapstructure:"tls"`
+	Server          ServerConfig          `mapstructure:"server"`
+	LoadBalance     LoadBalanceConfig     `mapstructure:"load_balance"`
+	Gm              GmConfig              `mapstructure:"gmtls"`
+	Tls             TlsConfig             `mapstructure:"tls"`
+	Redis           RedisConfig           `mapstructure:"redis"`
+	RedisRateLimit  RedisRateLimitConfig  `mapstructure:"redis_rate_limit"`
+	SingleRateLimit SingleRateLimitConfig `mapstructure:"single_rate_limit"`
 }
 
 // ServerConfig 定义服务器相关的配置结构体
@@ -60,6 +63,26 @@ type TlsConfig struct {
 	KeyFile  string `mapstructure:"key_file"`
 }
 
+// RedisConfig 定义 Redis 连接相关的配置结构体
+type RedisConfig struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+	PoolSize int    `mapstructure:"pool_size"`
+}
+
+// RedisRateLimitConfig 定义分布式限流相关的配置结构体
+type RedisRateLimitConfig struct {
+	Rate  int `mapstructure:"rate"`  // 每秒生成的令牌数
+	Burst int `mapstructure:"burst"` // 令牌桶容量
+}
+
+// SingleRateLimitConfig 定义单机内存限流相关的配置结构体
+type SingleRateLimitConfig struct {
+	Rate  int `mapstructure:"rate"`  // 每秒生成的令牌数
+	Burst int `mapstructure:"burst"` // 令牌桶容量
+}
+
 func LoadFileConfig() (*AppFileConfig, error) {
 	// 这里可以实现从文件加载配置的逻辑，例如使用 Viper 库
 	viper.SetConfigName("config") // 配置文件名（不带扩展名）
@@ -70,6 +93,17 @@ func LoadFileConfig() (*AppFileConfig, error) {
 	viper.SetDefault("load_balance.algorithm", "RR")
 	viper.SetDefault("server.tls_mode", "gmtls")
 
+	viper.SetDefault("redis.addr", "localhost:6379")
+	viper.SetDefault("redis.password", "")
+	viper.SetDefault("redis.db", 0)
+	viper.SetDefault("redis.pool_size", 100)
+
+	viper.SetDefault("redis_rate_limit.rate", 5)
+	viper.SetDefault("redis_rate_limit.burst", 10)
+
+	viper.SetDefault("single_rate_limit.rate", 5)
+	viper.SetDefault("single_rate_limit.burst", 10)
+
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("读取配置文件失败: %w", err)
 	}
@@ -78,6 +112,20 @@ func LoadFileConfig() (*AppFileConfig, error) {
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("解析配置到结构体失败: %w", err)
 	}
+
+	// 检查值合法性
+	if cfg.Redis.DB < 0 {
+		return nil, fmt.Errorf("Redis DB 索引不能为负数")
+	}
+
+	if cfg.RedisRateLimit.Rate <= 0 || cfg.RedisRateLimit.Burst <= 0 {
+		return nil, fmt.Errorf("分布式限流参数必须为正整数")
+	}
+
+	if cfg.SingleRateLimit.Rate <= 0 || cfg.SingleRateLimit.Burst <= 0 {
+		return nil, fmt.Errorf("单机限流参数必须为正整数")
+	}
+
 	return &cfg, nil
 
 }
