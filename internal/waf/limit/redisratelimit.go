@@ -81,7 +81,7 @@ func (redisl *RedisRateLimiter) RedisRateLimitMiddleware(next http.Handler) http
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip, err := xff.GetClientIP(r)
 		if err != nil {
-			log.Printf("[Redis Limiter] 解析 IP 失败: %v", err)
+			log.Printf("❌ [Redis Limiter] 解析访客 IP 失败: %v", err)
 			next.ServeHTTP(w, r) //解析 IP 失败，放行请求，避免误伤
 			return
 		}
@@ -100,7 +100,7 @@ func (redisl *RedisRateLimiter) RedisRateLimitMiddleware(next http.Handler) http
 
 		if err != nil { //降级策略：当 Redis 出现错误时，默认放行请求，避免误伤正常流量
 			// 后续改为降级到本地内存限流，保证在 Redis 故障时仍然能够提供一定的保护能力
-			log.Printf("[Redis Limiter] Redis 限流器异常，自动放行: %v", err)
+			log.Printf("❌ [Redis Limiter] Redis 限流器异常，自动放行: %v", err)
 			next.ServeHTTP(w, r)
 			return
 
@@ -108,7 +108,7 @@ func (redisl *RedisRateLimiter) RedisRateLimitMiddleware(next http.Handler) http
 
 		if result == 0 {
 			//拒绝请求，返回 429 Too Many Requests
-			log.Printf("[Redis Limiter] 触发分布式限流，IP %s 请求过于频繁，已被拒绝", ip)
+			log.Printf("⛔ [Redis Limiter] 触发分布式限流，IP %s 请求过于频繁，已被拒绝", ip)
 			w.WriteHeader(http.StatusTooManyRequests)
 			w.Write([]byte(`{"error":"Too Many Requests. Distributed Rate Limit Blocked!", "message": "Your IP is being rate limited. Please try again later."}`))
 			return

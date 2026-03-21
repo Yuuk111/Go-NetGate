@@ -49,7 +49,7 @@ func StartServer(ctx context.Context, port string, tlsmode string, gmConfig *gmt
 	case err := <-errChan: //信号A，启动时发生错误，立即返回错误
 		return err
 	case <-ctx.Done(): //信号B，接收到main.go 传入的 Ctrl+C 信号
-		log.Println("🛑 [Server] 收到退出信号，已停止接收新请求,正在安全关闭服务器...")
+		log.Println("⛔ [Server] 收到退出信号，已停止接收新请求,正在安全关闭服务器...")
 		// 设定打烊倒计时：给还在处理的请求最多 15 秒的时间完成，超过这个时间就强制关闭连接，避免资源占用过久
 		// 到时间自动触发 cancel()，从而通知所有使用这个 shutdownCtx 的协程安全退出
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)

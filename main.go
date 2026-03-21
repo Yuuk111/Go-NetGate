@@ -46,7 +46,7 @@ func main() {
 		PoolSize: 100,
 	})
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Fatalf("❌ [Redis] 无法连接到 Redis: %v, 启动失败", err)
+		log.Fatalf("❌ [Redis] 无法连接到 Redis: %v, 网关启动失败", err)
 	}
 	defer rdb.Close() //确保在 main 函数退出时关闭 Redis 连接
 	log.Println("✅ [Redis] 成功连接到 Redis")

@@ -58,7 +58,7 @@ func startHealthCheck(ctx context.Context, backends []*Backend) {
 					conn, err := net.DialTimeout("tcp", b.URL.Host, 2*time.Second)
 					if err != nil {
 						if b.IsAlive() {
-							log.Printf("🛑 [Health Check] [熔断] 后端节点宕机剔除:%s", b.URL.Host)
+							log.Printf("⛔ [Health Check] [熔断] 后端节点宕机剔除:%s", b.URL.Host)
 							b.SetAlive(false) //连接失败，标记服务器不可用
 						}
 					} else {
@@ -70,7 +70,7 @@ func startHealthCheck(ctx context.Context, backends []*Backend) {
 					}
 				}
 			case <-ctx.Done():
-				log.Println("🛑 [Health Check] 收到退出信号，心跳检测协程安全销毁")
+				log.Println("⛔ [Health Check] 收到退出信号，心跳检测协程安全销毁")
 				return //退出协程 并且会触发 defer ticker.Stop() 来停止定时器，释放资源
 			}
 		}

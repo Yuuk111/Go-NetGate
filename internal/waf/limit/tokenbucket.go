@@ -81,14 +81,14 @@ func (i *IPRateLimiter) RateLimitMiddleware(next http.Handler) http.Handler {
 		// 后续增加与 RemoteAddr 相关的安全检查，区分是否来自可信代理的请求，避免 IP 欺骗攻击
 		ip, err := xff.GetClientIP(r) //获取访客IP地址
 		if err != nil {
-			log.Printf("解析 IP 失败: %v", err)
+			log.Printf("❌ [Single Limiter] 解析访客 IP 失败: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		limiter := i.getVisitor(ip)
 		if !limiter.Allow() { //若未获取到令牌，说明请求过于频繁，返回 429 Too Many Requests
-			log.Printf("[WAF] IP %s 请求过于频繁，已被限流", ip)
+			log.Printf("⛔ [Single Limiter] IP %s 请求过于频繁，已被限流", ip)
 			w.WriteHeader(http.StatusTooManyRequests)
 			w.Write([]byte(`{"error":"Too Many Requests. CC Attack Blocked!", "message": "Your IP is being rate limited. Please try again later."}`))
 			return
