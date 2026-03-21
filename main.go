@@ -32,7 +32,7 @@ func main() {
 	//下面必须紧跟一行 defer cancel/stop()。谁污染，谁治理。
 	//===========================
 
-	// 1. 加载配置
+	// 加载配置
 	cmdConfig, err := config.LoadFileConfig()
 	if err != nil {
 		log.Fatalf("❌ [Config] 配置加载失败: %v", err)
@@ -45,13 +45,19 @@ func main() {
 		DB:       0,
 		PoolSize: 100,
 	})
-	// 2. 读取配置项
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		log.Fatalf("❌ [Redis] 无法连接到 Redis: %v, 启动失败", err)
+	}
+	defer rdb.Close() //确保在 main 函数退出时关闭 Redis 连接
+	log.Println("✅ [Redis] 成功连接到 Redis")
+
+	// 读取配置项
 	ListenPort := ":" + cmdConfig.Server.ListenPort    // 读取监听端口
 	TargetURLs := cmdConfig.LoadBalance.Backends       // 读取后端服务器列表
 	LoadBalanceAlgo := cmdConfig.LoadBalance.Algorithm // 读取负载均衡算法
 	TLSMode := cmdConfig.Server.TLSMode                // 读取 TLS 模式
 
-	// 3. 初始化国密 TLS 配置
+	// 初始化国密 TLS 配置
 	var gmConfig *tjgmtls.Config
 	if TLSMode == "gmtls" {
 		gmConfig, err = gmtls.LoadGMTLSConfig(cmdConfig.Gm.SignCertFile, cmdConfig.Gm.SignKeyFile, cmdConfig.Gm.EncCertFile, cmdConfig.Gm.EncKeyFile)
@@ -60,21 +66,23 @@ func main() {
 		}
 	}
 
-	// 4. 创建反向代理
+	// 创建反向代理
 	// proxy, err := proxy.NewReverseProxy(TargetURL)
 	proxyhandler, err := proxy.NewBalancedReverseProxy(ctx, LoadBalanceAlgo, TargetURLs)
 	if err != nil {
 		log.Fatalf("❌ [Server] 反向代理初始化失败: %v", err)
 	}
 
-	// 5. 组装处理链：WAF -> Proxy
-	// 创建限流器实例，后续可以加config支持动态调整限流参数
-	rateLimiter := limit.NewIPRateLimiter(5, 10) //每个IP每秒最多5个请求，令牌桶容量为10
+	// 组装处理链：限流器 -> WAF -> 反向代理
+	// 创建单机限流器实例，后续可以加config支持动态调整限流参数
+	// rateLimiter := limit.NewIPRateLimiter(5, 10) //每个IP每秒最多5个请求，令牌桶容量为10
 
-	// 使用 WAF 中间件包装 proxy
-	handler := rateLimiter.RateLimitMiddleware(waf.WafMiddleware(proxyhandler))
+	// 创建分布式 Redis 限流器实例，后续可以加config支持动态调整限流参数
+	redisRateLimiter := limit.NewRedisRateLimiter(rdb, 5, 10) //每个IP每秒最多5个请求，令牌桶容量为10
+	// 使用洋葱模型组装中间件链
+	handler := redisRateLimiter.RedisRateLimitMiddleware(waf.WafMiddleware(proxyhandler))
 
-	// 6. 启动服务
+	// 启动服务
 	log.Printf("✅ [Server] Go语言国密WAF启动，监听 %s，转发至 %#v", ListenPort, TargetURLs)
 	if err := myserver.StartServer(
 		ctx,

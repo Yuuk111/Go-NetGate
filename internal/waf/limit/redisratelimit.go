@@ -1,6 +1,7 @@
 package limit
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"time"
@@ -91,7 +92,11 @@ func (redisl *RedisRateLimiter) RedisRateLimitMiddleware(next http.Handler) http
 		//调用 Lua 脚本执行令牌桶算法，传入当前速率,桶容量,当前时间
 		// 传入r.Context()，确保在请求取消时能够及时中断 Redis 操作，避免资源浪费
 		// 还可以传入定时器的上下文，防止 Redis 响应过慢导致请求堆积，最后触发网关的全局超时保护机制等
-		result, err := redisl.script.Run(r.Context(), redisl.redisClient, []string{key}, redisl.rate, redisl.burst, now).Result()
+
+		ctxTimeout, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond) //设置 Redis 操作的超时时间，防止长时间等待
+		defer cancel()
+		result, err := redisl.script.Run(ctxTimeout, redisl.redisClient, []string{key}, redisl.rate, redisl.burst, now).Result()
+		cancel()
 
 		if err != nil { //降级策略：当 Redis 出现错误时，默认放行请求，避免误伤正常流量
 			// 后续改为降级到本地内存限流，保证在 Redis 故障时仍然能够提供一定的保护能力
