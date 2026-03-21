@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+	"golang.org/x/time/rate"
 )
 
 type Appconfig struct {
@@ -73,14 +74,14 @@ type RedisConfig struct {
 
 // RedisRateLimitConfig 定义分布式限流相关的配置结构体
 type RedisRateLimitConfig struct {
-	Rate  int `mapstructure:"rate"`  // 每秒生成的令牌数
-	Burst int `mapstructure:"burst"` // 令牌桶容量
+	Rate  rate.Limit `mapstructure:"rate"`  // 每秒生成的令牌数
+	Burst int        `mapstructure:"burst"` // 令牌桶容量
 }
 
 // SingleRateLimitConfig 定义单机内存限流相关的配置结构体
 type SingleRateLimitConfig struct {
-	Rate  int `mapstructure:"rate"`  // 每秒生成的令牌数
-	Burst int `mapstructure:"burst"` // 令牌桶容量
+	Rate  rate.Limit `mapstructure:"rate"`  // 每秒生成的令牌数
+	Burst int        `mapstructure:"burst"` // 令牌桶容量
 }
 
 func LoadFileConfig() (*AppFileConfig, error) {

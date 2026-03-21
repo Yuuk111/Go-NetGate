@@ -8,6 +8,7 @@ import (
 
 	"github.com/Yuuk111/Go-NetGate/internal/xff"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/time/rate"
 )
 
 /*
@@ -60,20 +61,22 @@ const redisKeyPrefix = "netgate:ratelimit:"
 
 // RedisRateLimiter 基于 Redis 的分布式令牌桶限流器
 type RedisRateLimiter struct {
-	redisClient *redis.Client
-	rate        int
-	burst       int
-	script      *redis.Script
+	redisClient   *redis.Client
+	rate          rate.Limit
+	burst         int
+	script        *redis.Script
+	localFallback *IPRateLimiter //本地内存限流器，作为 Redis 故障时的降级方案
 }
 
 // NewRedisRateLimiter 实例化全局 IP 限流器
-func NewRedisRateLimiter(rdb *redis.Client, rate, burst int) *RedisRateLimiter {
+func NewRedisRateLimiter(rdb *redis.Client, rate rate.Limit, burst int) *RedisRateLimiter {
 	return &RedisRateLimiter{
 		redisClient: rdb,
 		rate:        rate,
 		burst:       burst,
 		//预加载 Lua 脚本，提升性能，后续调用只传 SHA1 摘要
-		script: redis.NewScript(luaTokenBucketScript),
+		script:        redis.NewScript(luaTokenBucketScript),
+		localFallback: NewIPRateLimiter(rate, burst), //初始化本地内存限流器
 	}
 }
 
