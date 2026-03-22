@@ -29,8 +29,9 @@ func LoadConfig() *Appconfig {
 
 // AppFileConfig 定义了从配置文件加载的结构体
 type AppFileConfig struct {
-	Server          ServerConfig          `mapstructure:"server"`
-	LoadBalance     LoadBalanceConfig     `mapstructure:"load_balance"`
+	Server     ServerConfig      `mapstructure:"server"`
+	RouteRules []RouteRuleConfig `mapstructure:"route_rules"`
+	// LoadBalance     LoadBalanceConfig     `mapstructure:"load_balance"`
 	Gm              GmConfig              `mapstructure:"gmtls"`
 	Tls             TlsConfig             `mapstructure:"tls"`
 	Redis           RedisConfig           `mapstructure:"redis"`
@@ -44,10 +45,17 @@ type ServerConfig struct {
 	TLSMode    string `mapstructure:"tls_mode"` // tls模式
 }
 
-// LoadBalanceConfig 定义负载均衡相关的配置结构体
-type LoadBalanceConfig struct {
+// // LoadBalanceConfig 定义负载均衡相关的配置结构体
+// type LoadBalanceConfig struct {
+// 	Algorithm string   `mapstructure:"algorithm"`
+// Backends []string `mapstructure:"backend"`
+// }
+
+// RouteRuleConfig 定义路由规则相关的配置结构体
+type RouteRuleConfig struct {
+	Prefix    string   `mapstructure:"prefix"`
 	Algorithm string   `mapstructure:"algorithm"`
-	Backends  []string `mapstructure:"backends"`
+	Backends  []string `mapstructure:"backend"`
 }
 
 // GmConfig 定义国密证书相关的配置结构体
@@ -91,7 +99,6 @@ func LoadFileConfig() (*AppFileConfig, error) {
 	viper.AddConfigPath(".")      // 配置文件路径
 	// 设置默认值
 	viper.SetDefault("server.port", "8443")
-	viper.SetDefault("load_balance.algorithm", "RR")
 	viper.SetDefault("server.tls_mode", "gmtls")
 
 	viper.SetDefault("redis.addr", "localhost:6379")

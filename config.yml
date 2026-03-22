@@ -6,14 +6,23 @@ server:
   tls_mode: "tls" # 可选值：tls、gmtls
 
 # 负载均衡配置
-load_balance:
-  # 后端服务器列表
-  backends:
-    - "http://localhost:9001"
-    - "http://localhost:9002"
-    - "http://localhost:9003"
-  # 负载均衡算法（基础轮询-RR、IP哈希-IPHash）
-  algorithm: "RR"
+route_rules:
+#  - path: "/api/user"
+#    algorithm: "RR"
+#    backends:
+#       - "http://localhost:9001"
+#       - "http://localhost:9002"
+   
+ - path: "/api/order"
+  #  algorithm: "RR"
+   backends:
+      - "http://localhost:9004"
+ - path: "/" # 必须设置默认路由规则，匹配所有未被前面规则匹配到的请求
+   algorithm: "RR"
+   backends:
+      - "http://localhost:9001"
+      - "http://localhost:9002"
+      - "http://localhost:9003"
 
 # 国密证书配置
 gmtls:

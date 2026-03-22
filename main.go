@@ -10,6 +10,7 @@ import (
 	"github.com/Yuuk111/Go-NetGate/internal/config"
 	"github.com/Yuuk111/Go-NetGate/internal/gmtls"
 	"github.com/Yuuk111/Go-NetGate/internal/proxy"
+	"github.com/Yuuk111/Go-NetGate/internal/proxy/router"
 	myserver "github.com/Yuuk111/Go-NetGate/internal/server"
 	"github.com/Yuuk111/Go-NetGate/internal/waf"
 	"github.com/Yuuk111/Go-NetGate/internal/waf/limit"
@@ -52,10 +53,8 @@ func main() {
 	log.Println("✅ [Redis] 成功连接到 Redis")
 
 	// 读取配置项
-	ListenPort := ":" + cmdConfig.Server.ListenPort    // 读取监听端口
-	TargetURLs := cmdConfig.LoadBalance.Backends       // 读取后端服务器列表
-	LoadBalanceAlgo := cmdConfig.LoadBalance.Algorithm // 读取负载均衡算法
-	TLSMode := cmdConfig.Server.TLSMode                // 读取 TLS 模式
+	ListenPort := ":" + cmdConfig.Server.ListenPort // 读取监听端口
+	TLSMode := cmdConfig.Server.TLSMode             // 读取 TLS 模式
 
 	// 初始化国密 TLS 配置
 	var gmConfig *tjgmtls.Config
@@ -66,12 +65,29 @@ func main() {
 		}
 	}
 
-	// 创建反向代理
-	// proxy, err := proxy.NewReverseProxy(TargetURL)
-	proxyhandler, err := proxy.NewBalancedReverseProxy(ctx, LoadBalanceAlgo, TargetURLs)
-	if err != nil {
-		log.Fatalf("❌ [Server] 反向代理初始化失败: %v", err)
+	//===========================
+	// 初始化智能路由引擎
+	//===========================
+	router := router.NewRouter()
+	targetRoutes := make([]string, 0, len(cmdConfig.RouteRules))
+
+	for _, routeRule := range cmdConfig.RouteRules {
+		// 将每条路由规则添加到路由引擎中
+		proxyHandler, err := proxy.NewBalancedReverseProxy(ctx, routeRule.Algorithm, routeRule.Backends)
+		if err != nil {
+			log.Fatalf("❌ [Router] 路由规则 %s 初始化失败: %v", routeRule.Prefix, err)
+		}
+		targetRoutes = append(targetRoutes, routeRule.Prefix)
+		router.AddRoute(routeRule.Prefix, proxyHandler)
+		log.Printf("✅ [Router] 路由规则添加成功: 前缀=%s, 算法=%s, 后端=%#v", routeRule.Prefix, routeRule.Algorithm, routeRule.Backends)
 	}
+
+	// // 创建反向代理
+	// // proxy, err := proxy.NewReverseProxy(TargetURL)
+	// proxyhandler, err := proxy.NewBalancedReverseProxy(ctx, LoadBalanceAlgo, TargetURLs)
+	// if err != nil {
+	// 	log.Fatalf("❌ [Server] 反向代理初始化失败: %v", err)
+	// }
 
 	// 组装处理链：限流器 -> WAF -> 反向代理
 	// 创建单机限流器实例，后续可以加config支持动态调整限流参数
@@ -80,10 +96,10 @@ func main() {
 	// 创建分布式 Redis 限流器实例，后续可以加config支持动态调整限流参数
 	redisRateLimiter := limit.NewRedisRateLimiter(rdb, cmdConfig.RedisRateLimit.Rate, cmdConfig.RedisRateLimit.Burst) //每个IP每秒最多5个请求，令牌桶容量为10
 	// 使用洋葱模型组装中间件链
-	handler := redisRateLimiter.RedisRateLimitMiddleware(waf.WafMiddleware(proxyhandler))
+	handler := redisRateLimiter.RedisRateLimitMiddleware(waf.WafMiddleware(router))
 
 	// 启动服务
-	log.Printf("✅ [Server] Go语言国密WAF启动，监听 %s，转发至 %#v", ListenPort, TargetURLs)
+	log.Printf("✅ [Server] Go语言国密WAF启动，监听 %s，转发至路由 %#v", ListenPort, targetRoutes)
 	if err := myserver.StartServer(
 		ctx,
 		ListenPort,
