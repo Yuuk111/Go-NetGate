@@ -105,6 +105,13 @@ func (redisl *RedisRateLimiter) RedisRateLimitMiddleware(next http.Handler) http
 		if err != nil { //降级策略：当 Redis 出现错误时，默认放行请求，避免误伤正常流量
 			// 后续改为降级到本地内存限流，保证在 Redis 故障时仍然能够提供一定的保护能力
 			log.Printf("❌ [Redis Limiter] Redis 限流器异常，自动放行: %v", err)
+			localLimiter := redisl.localFallback.getVisitor(ip)
+			if !localLimiter.Allow() {
+				w.WriteHeader(http.StatusTooManyRequests)
+				w.Write([]byte(`{"error":"Too Many Requests. Local Fallback Rate Limit Blocked!", "message": "Your IP is being rate limited by local fallback. Please try again later."}`))
+				return
+			}
+			// 单机内存限流器放行，继续处理请求
 			next.ServeHTTP(w, r)
 			return
 
