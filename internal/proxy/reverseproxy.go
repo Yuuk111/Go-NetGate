@@ -44,7 +44,7 @@ func NewBalancedReverseProxy(ctx context.Context, algo string, targets []string)
 			if target == nil {
 				log.Printf("❌ [Load Balancer] 没有可用的后端服务器，无法处理请求！")
 				pr.Out.URL.Scheme = "http" //默认使用 http 协议，虽然这个值不会被真正使用，因为后续的 Transport 会直接返回错误响应
-				pr.Out.URL.Host = "502.badgateway.local"
+				pr.Out.URL.Host = "0.0.0.0"
 				return
 			}
 

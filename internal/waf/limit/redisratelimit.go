@@ -98,7 +98,7 @@ func (redisl *RedisRateLimiter) RedisRateLimitMiddleware(next http.Handler) http
 
 		ctxTimeout, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond) //设置 Redis 操作的超时时间，防止长时间等待
 		defer cancel()
-		result, err := redisl.script.Run(ctxTimeout, redisl.redisClient, []string{key}, redisl.rate, redisl.burst, now).Int()
+		result, err := redisl.script.Run(ctxTimeout, redisl.redisClient, []string{key}, float64(redisl.rate), redisl.burst, now).Int()
 		cancel()
 		// 大坑，result默认返回int64
 
