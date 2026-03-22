@@ -53,7 +53,7 @@ type ServerConfig struct {
 
 // RouteRuleConfig 定义路由规则相关的配置结构体
 type RouteRuleConfig struct {
-	Prefix    string   `mapstructure:"prefix"`
+	Path      string   `mapstructure:"path"`
 	Algorithm string   `mapstructure:"algorithm"`
 	Backends  []string `mapstructure:"backend"`
 }

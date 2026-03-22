@@ -41,6 +41,13 @@ func NewBalancedReverseProxy(ctx context.Context, algo string, targets []string)
 			// 2. 魔法方法：自动重写请求的目的地
 			// 它会自动把 pr.Out 的 Scheme, Host 替换为 target 的
 			// 并且会安全地拼接 Path 和 RawQuery
+			if target == nil {
+				log.Printf("❌ [Load Balancer] 没有可用的后端服务器，无法处理请求！")
+				pr.Out.URL.Scheme = "http" //默认使用 http 协议，虽然这个值不会被真正使用，因为后续的 Transport 会直接返回错误响应
+				pr.Out.URL.Host = "502.badgateway.local"
+				return
+			}
+
 			pr.SetURL(target)
 			// 3. 魔法方法：自动设置 X-Forwarded-For, X-Forwarded-Host, X-Forwarded-Proto 等头部
 			pr.SetXForwarded()

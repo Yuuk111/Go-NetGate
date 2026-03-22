@@ -75,11 +75,11 @@ func main() {
 		// 将每条路由规则添加到路由引擎中
 		proxyHandler, err := proxy.NewBalancedReverseProxy(ctx, routeRule.Algorithm, routeRule.Backends)
 		if err != nil {
-			log.Fatalf("❌ [Router] 路由规则 %s 初始化失败: %v", routeRule.Prefix, err)
+			log.Fatalf("❌ [Router] 路由规则 %s 初始化失败: %v", routeRule.Path, err)
 		}
-		targetRoutes = append(targetRoutes, routeRule.Prefix)
-		router.AddRoute(routeRule.Prefix, proxyHandler)
-		log.Printf("✅ [Router] 路由规则添加成功: 前缀=%s, 算法=%s, 后端=%#v", routeRule.Prefix, routeRule.Algorithm, routeRule.Backends)
+		targetRoutes = append(targetRoutes, routeRule.Path)
+		router.AddRoute(routeRule.Path, proxyHandler)
+		log.Printf("✅ [Router] 路由规则添加成功: 前缀=%s, 算法=%s, 后端=%#v", routeRule.Path, routeRule.Algorithm, routeRule.Backends)
 	}
 
 	// // 创建反向代理

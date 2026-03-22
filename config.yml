@@ -9,17 +9,17 @@ server:
 route_rules:
 #  - path: "/api/user"
 #    algorithm: "RR"
-#    backends:
+#    backend:
 #       - "http://localhost:9001"
 #       - "http://localhost:9002"
    
  - path: "/api/order"
   #  algorithm: "RR"
-   backends:
+   backend:
       - "http://localhost:9004"
  - path: "/" # 必须设置默认路由规则，匹配所有未被前面规则匹配到的请求
    algorithm: "RR"
-   backends:
+   backend:
       - "http://localhost:9001"
       - "http://localhost:9002"
       - "http://localhost:9003"
