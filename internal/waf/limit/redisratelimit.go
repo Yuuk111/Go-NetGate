@@ -104,7 +104,7 @@ func (redisl *RedisRateLimiter) RedisRateLimitMiddleware(next http.Handler) http
 
 		if err != nil { //降级策略：当 Redis 出现错误时，默认放行请求，避免误伤正常流量
 			// 后续改为降级到本地内存限流，保证在 Redis 故障时仍然能够提供一定的保护能力
-			log.Printf("❌ [Redis Limiter] Redis 限流器异常，自动放行: %v", err)
+			log.Printf("❌ [Redis Limiter] Redis 限流器异常，降级为本地内存限流: %v", err)
 			localLimiter := redisl.localFallback.getVisitor(ip)
 			if !localLimiter.Allow() {
 				w.WriteHeader(http.StatusTooManyRequests)
