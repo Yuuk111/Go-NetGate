@@ -3,19 +3,21 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/Yuuk111/Go-NetGate/internal/config"
 	"github.com/Yuuk111/Go-NetGate/internal/gmtls"
+	"github.com/Yuuk111/Go-NetGate/internal/insight"
 	"github.com/Yuuk111/Go-NetGate/internal/proxy"
 	"github.com/Yuuk111/Go-NetGate/internal/proxy/router"
-	myserver "github.com/Yuuk111/Go-NetGate/internal/server"
 	"github.com/Yuuk111/Go-NetGate/internal/waf"
 	"github.com/Yuuk111/Go-NetGate/internal/waf/limit"
 	"github.com/redis/go-redis/v9"
 
+	myserver "github.com/Yuuk111/Go-NetGate/internal/server"
 	tjgmtls "github.com/tjfoc/gmsm/gmtls"
 )
 
@@ -28,10 +30,14 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop() //退出时释放资源
 
-	//===========================
-	//Go 语言铁律：只要你看到 WithTimeout、WithCancel、NotifyContext
-	//下面必须紧跟一行 defer cancel/stop()。谁污染，谁治理。
-	//===========================
+	// 初始化 Insight 异步上报引擎
+	insightSender, err := insight.NewGRPCReporter("127.0.0.1:50051", 100)
+	if err != nil {
+		log.Printf("❌ [Insight] 无法连接到日志分析服务器: %v \n", err)
+	} else {
+		log.Println("✅ [Insight] 安全审计日志引擎初始化成功")
+		defer insightSender.Close() //确保在 main 函数退出时关闭 Insight 上报引擎
+	}
 
 	// 加载配置
 	cmdConfig, err := config.LoadFileConfig()
@@ -89,14 +95,22 @@ func main() {
 	// 	log.Fatalf("❌ [Server] 反向代理初始化失败: %v", err)
 	// }
 
-	// 组装处理链：限流器 -> WAF -> 反向代理
+	// 组装处理链：限流器 -> WAF -> ->Agent -> 反向代理
 	// 创建单机限流器实例，后续可以加config支持动态调整限流参数
 	// rateLimiter := limit.NewIPRateLimiter(cmdConfig.SingleRateLimit.Rate, cmdConfig.SingleRateLimit.Burst) //每个IP每秒最多5个请求，令牌桶容量为10
+
+	// 初始化 Insight 中间件
+	insightMW := waf.InsightMiddleware(insightSender)
 
 	// 创建分布式 Redis 限流器实例，后续可以加config支持动态调整限流参数
 	redisRateLimiter := limit.NewRedisRateLimiter(rdb, cmdConfig.RedisRateLimit.Rate, cmdConfig.RedisRateLimit.Burst) //每个IP每秒最多5个请求，令牌桶容量为10
 	// 使用洋葱模型组装中间件链
-	handler := redisRateLimiter.RedisRateLimitMiddleware(waf.WafMiddleware(router))
+	var handler http.Handler
+	if insightSender != nil {
+		handler = redisRateLimiter.RedisRateLimitMiddleware(waf.WafMiddleware(insightMW(router)))
+	} else {
+		handler = redisRateLimiter.RedisRateLimitMiddleware(waf.WafMiddleware(router))
+	}
 
 	// 启动服务
 	log.Printf("✅ [Server] Go语言国密WAF启动，监听 %s，转发至路由 %#v", ListenPort, targetRoutes)

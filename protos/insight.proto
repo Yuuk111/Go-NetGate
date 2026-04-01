@@ -1,0 +1,23 @@
+// protos/insight.protos
+syntax = "proto3";
+option go_package = "./pb";
+package insight;
+
+service LogAnalyser {
+    rpc StreamLogs (stream LogItem) returns (AnalysisSummary);
+}
+
+message LogItem {
+    string trace_id = 1; // 追踪ID，关联同一请求的日志项
+    string source_ip = 2;
+    string destination_ip = 3;
+    string method = 4;
+    string path = 5;
+    string payload = 6; // HTTP Body or Header 中的可疑数据
+    int32 timestamp = 7; // Unix时间戳
+}
+
+message AnalysisSummary {
+    int32 processed_count = 1; // 处理的日志数量
+    string status = 2; // 分析状态
+}

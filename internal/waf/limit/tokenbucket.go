@@ -61,6 +61,9 @@ func (i *IPRateLimiter) getVisitor(ip string) *rate.Limiter {
 	return v.limiter
 }
 
+/*
+该方法存在 Goroutine 泄露问题
+*/
 // cleanupVisitors 定期清理闲置的访客记录，避免内存泄漏
 func (i *IPRateLimiter) cleanupVisitors() {
 	for {
