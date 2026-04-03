@@ -16,13 +16,17 @@ route_rules:
  - path: "/api/order"
   #  algorithm: "RR"
    backend:
-      - "http://localhost:9004"
+      # - "http://localhost:9004"
+      - "http://172.19.0.1:9004"
  - path: "/" # 必须设置默认路由规则，匹配所有未被前面规则匹配到的请求
    algorithm: "RR"
    backend:
-      - "http://localhost:9001"
-      - "http://localhost:9002"
-      - "http://localhost:9003"
+      # - "http://localhost:9001"
+      # - "http://localhost:9002"
+      # - "http://localhost:9003"
+      - "http://172.19.0.1:9001"
+      - "http://172.19.0.1:9002"
+      - "http://172.19.0.1:9003"
 
 # 国密证书配置
 gmtls:
