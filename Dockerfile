@@ -3,7 +3,7 @@ FROM golang:1.26.1-alpine AS builder
 
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOPROXY=https://goproxy.cn,direct
 
-WORKDIR /app
+WORKDIR /build
 
 COPY go.mod go.sum ./
 RUN go mod download
@@ -22,7 +22,7 @@ RUN apk --no-cache add tzdata ca-certificates && \
 
 WORKDIR /app
 
-COPY --from=builder /builder/netgate .
+COPY --from=builder /build/netgate .
 
 EXPOSE 8443
 
