@@ -1,0 +1,25 @@
+# Git目录
+.git
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+
+# 二进制文件
+*.exe
+netgate
+NetGate
+main
+
+# 日志文件
+*.log
+
+# 配置文件及证书
+config.yml
+certs/
+
+# 本地环境
+.env
+.env/
+env/

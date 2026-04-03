@@ -30,19 +30,19 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop() //退出时释放资源
 
+	// 加载配置
+	cmdConfig, err := config.LoadFileConfig()
+	if err != nil {
+		log.Fatalf("❌ [Config] 配置加载失败: %v", err)
+	}
+
 	// 初始化 Insight 异步上报引擎
-	insightSender, err := insight.NewGRPCReporter("127.0.0.1:50051", 100)
+	insightSender, err := insight.NewGRPCReporter(cmdConfig.InsightAgent.ServerAddr, cmdConfig.InsightAgent.BufferSize)
 	if err != nil {
 		log.Printf("❌ [Insight] 无法连接到日志分析服务器: %v \n", err)
 	} else {
 		log.Println("✅ [Insight] 安全审计日志引擎初始化成功")
 		defer insightSender.Close() //确保在 main 函数退出时关闭 Insight 上报引擎
-	}
-
-	// 加载配置
-	cmdConfig, err := config.LoadFileConfig()
-	if err != nil {
-		log.Fatalf("❌ [Config] 配置加载失败: %v", err)
 	}
 
 	// 初始化 Redis

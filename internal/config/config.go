@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/viper"
 	"golang.org/x/time/rate"
@@ -37,6 +38,7 @@ type AppFileConfig struct {
 	Redis           RedisConfig           `mapstructure:"redis"`
 	RedisRateLimit  RedisRateLimitConfig  `mapstructure:"redis_rate_limit"`
 	SingleRateLimit SingleRateLimitConfig `mapstructure:"single_rate_limit"`
+	InsightAgent    InsightAgentConfig    `mapstructure:"insight_agent"`
 }
 
 // ServerConfig 定义服务器相关的配置结构体
@@ -92,6 +94,12 @@ type SingleRateLimitConfig struct {
 	Burst int        `mapstructure:"burst"` // 令牌桶容量
 }
 
+// InsightAgentConfig 定义安全日志审计上报引擎相关的配置结构体
+type InsightAgentConfig struct {
+	ServerAddr string `mapstructure:"server_addr"` //日志分析服务器地址
+	BufferSize int    `mapstructure:"buffer_size"` //日志缓冲区大小
+}
+
 func LoadFileConfig() (*AppFileConfig, error) {
 	// 这里可以实现从文件加载配置的逻辑，例如使用 Viper 库
 	viper.SetConfigName("config") // 配置文件名（不带扩展名）
@@ -111,6 +119,17 @@ func LoadFileConfig() (*AppFileConfig, error) {
 
 	viper.SetDefault("single_rate_limit.rate", 5)
 	viper.SetDefault("single_rate_limit.burst", 10)
+
+	// Insight Agent 默认配置
+	viper.SetDefault("insight_agent.server_addr", "127.0.0.1:50051")
+	viper.SetDefault("insight_agent.buffer_size", 100)
+
+	/*
+		环境变量覆盖，容器化部署改造
+	*/
+	viper.SetEnvPrefix("NETGATE")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv() // 允许环境变量覆盖配置文件中的值，环境变量格式为 NETGATE_SERVER_PORT, NETGATE_REDIS_ADDR 等
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("读取配置文件失败: %w", err)

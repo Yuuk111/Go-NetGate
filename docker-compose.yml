@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  insight-agent:
+    build: 
+      context: ../Agent
+    container_name: insight-agent
+    expose:
+      - "50051:50051"
+    env_file:
+      - .env
+    restart: always
+    
+  netgate:
+    build:
+      context: .
+    container_name: netgate
+    ports:
+      - "8443:8443"
+    depends_on:
+      - netgate-redis
+    env_file:
+      - .env
+    volumes:
+      - ./certs:/app/certs:ro
+    restart: always
+    
+

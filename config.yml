@@ -53,4 +53,6 @@ single_rate_limit:
   rate: 5   # 每秒生成的令牌数
   burst: 10 # 令牌桶容量
 
-
+insight_agent:
+  server_addr: "127.0.0.1:50051"
+  buffer_size: 100
