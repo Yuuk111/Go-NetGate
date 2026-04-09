@@ -26,6 +26,7 @@ func InsightMiddleware(sender insight.LogSender) func(http.Handler) http.Handler
 				DestinationIp: r.Host,
 				Method:        r.Method,
 				Path:          r.URL.Path,
+				Query:         r.URL.RawQuery,
 				Payload:       "", // 暂时不记录io.TeepReader(r.Body)的内容，后续可以根据需要添加
 				Timestamp:     int32(time.Now().Unix()),
 			}
