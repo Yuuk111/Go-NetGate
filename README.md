@@ -1,3 +1,21 @@
+## 🧰 技术栈与核心依赖 (Tech Stack)
+
+**核心编程语言** ![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?style=for-the-badge&logo=go&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)
+
+**网络与微服务通信** ![gRPC](https://img.shields.io/badge/gRPC-Client_Streaming-244C5A?style=for-the-badge&logo=grpc&logoColor=white)
+![HTTP/2](https://img.shields.io/badge/HTTP/2-TLS_&_GmTLS-005C84?style=for-the-badge)
+
+**高并发中间件与存储** ![Redis](https://img.shields.io/badge/Redis-Rate_Limiting-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Lua](https://img.shields.io/badge/Lua-Distributed_Locks-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
+
+**AI 审计中枢与数据流** ![AsyncOpenAI](https://img.shields.io/badge/AsyncOpenAI-ReAct_Agent-412991?style=for-the-badge&logo=openai&logoColor=white)
+![aiohttp](https://img.shields.io/badge/aiohttp-SSE_Dashboard-2C5BB4?style=for-the-badge&logo=python&logoColor=white)
+![HTML5](https://img.shields.io/badge/HTML5-Dark_UI-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+
+**云原生基础设施** ![Docker](https://img.shields.io/badge/Docker-Multi--stage-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-Alpine_&_Slim-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+
 # NetGate 🛡️
 
 [](https://go.dev/)
